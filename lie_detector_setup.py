@@ -4,9 +4,12 @@ from torch.nn import functional as F
 import numpy as np
 
 def get_activation(activations_dict, name):
-    def hook(model, input, output):
-        activations_dict[name] = output.detach()
+    def hook(module, input, output):
+        # Unpack if output is a tuple (common in GPT-2 blocks)
+        hidden_states = output[0] if isinstance(output, tuple) else output
+        activations_dict[name] = hidden_states.detach()
     return hook
+
 
 
 def load_model_and_tokenizer(model_name="gpt2"):
