@@ -3,13 +3,9 @@ from transformers import GPT2Tokenizer, GPT2LMHeadModel
 from torch.nn import functional as F
 import numpy as np
 
-activations = {}
-
-
-def get_activation(name):
+def get_activation(activations_dict, name):
     def hook(model, input, output):
-        activations[name] = output.detach()
-
+        activations_dict[name] = output.detach()
     return hook
 
 
@@ -20,9 +16,13 @@ def load_model_and_tokenizer(model_name="gpt2"):
     return model, tokenizer
 
 
-def register_hooks(model):
+def register_hooks(model, activations_dict):
+    """Re-register hooks on transformer layers to capture activations."""
     for i, block in enumerate(model.transformer.h):
-        block.register_forward_hook(get_activation(f'layer_{i}'))
+        # Remove existing hooks first (if any)
+        block._forward_hooks.clear()
+        block.register_forward_hook(get_activation(activations_dict, f'layer_{i}'))
+
 
 
 def prepare_prompt(system_prompt, user_prompt):
@@ -34,7 +34,7 @@ def encode_prompt(tokenizer, prompt):
     return inputs
 
 
-def run_inference(model, tokenizer, prompt):
+def run_inference(model, tokenizer, prompt, activations_dict):
     inputs = encode_prompt(tokenizer, prompt)
     with torch.no_grad():
         outputs = model(**inputs, labels=inputs['input_ids'])
