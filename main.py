@@ -31,10 +31,13 @@ def main():
 
         inputs = tokenizer(prompt, return_tensors="pt")
 
+        attention_mask = inputs['attention_mask']
+
         generated_ids = model.generate(
             inputs['input_ids'],
-            max_length=inputs['input_ids'].shape[1] + 20,  # 20 tokens generated
-            do_sample=False,  # Greedy
+            attention_mask=attention_mask,
+            max_length=inputs['input_ids'].shape[1] + 20,
+            do_sample=False,
             pad_token_id=tokenizer.eos_token_id
         )
 
